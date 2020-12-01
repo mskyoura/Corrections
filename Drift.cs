@@ -72,13 +72,16 @@ namespace Corrections
                                 try
                                 {
                                     var samples = item as IList<Sample>;
-                                    var pol = Polynomial.Fit(samples.Where(sample => sample != null).Select(sample => (double)sample.Timestamp.Ticks).ToArray(),
+                                    if (samples.Count < 1)
+                                        return null;
+                                    var firstSample = samples.First();
+                                    var pol = Polynomial.Fit(samples.Where(sample => sample != null).Select(sample => (double)((sample.Timestamp - firstSample.Timestamp).TotalMilliseconds)).ToArray(),
                                         samples.Where(sample => sample != null).Select(sample => sample.Value).ToArray(), order);
                                     List<Sample> driftCorrected = new List<Sample>();
                                     List<Sample> trend = new List<Sample>();
                                     for (int i = 0; i < samples.Count; i++)
                                     {
-                                        var trendValue = pol.Evaluate(samples[i].Timestamp.Ticks);
+                                        var trendValue = pol.Evaluate((double)((samples[i].Timestamp - firstSample.Timestamp).TotalMilliseconds));
                                         trend.Add(new Sample(trendValue, samples[i].Timestamp));
                                         driftCorrected.Add(new Sample(samples[i].Value - trendValue,
                                             samples[i].Timestamp));
